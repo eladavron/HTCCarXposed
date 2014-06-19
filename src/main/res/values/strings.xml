@@ -1,0 +1,33 @@
+<resources>
+    <!-- Headers -->
+    <string name="interface_mods">Interface Mods</string>
+    <string name="hardware_mods">On Startup</string>
+    <string name="hardware_exit">On Exit</string>
+
+    <!-- Settings -->
+    <string name="app_name">Car Xposed!</string>
+    <string name="allow_pulldown">Allow Statusbar Pulldown</string>
+    <string name="allow_pulldown_long">Restore pulldown functionality to the statusbar.</string>
+    <string name="allow_multitasking">Allow Multi-Tasking</string>
+    <string name="allow_multitasking_long">Restore \'Recent Apps\' functionality.\nWarning: Breaks In-App Dialer!!</string>
+    <string name="bypassExitDialog">Exit without confirmation</string>
+    <string name="bypassExitDialog_long">Skip the confirmation dialog when exiting the Car app.</string>
+    <string name="capture_home">Take over \'Home\' button</string>
+    <string name="capture_home_long">Make \'Home\' button stay in the Car App. Disable to go to launcher.</string>
+    <string name="wifi_mode">Wi-Fi</string>
+    <string name="gps_mode">GPS</string>
+
+    <string-array name="modes">
+        <item>Don\'t Change</item>
+        <item>Turn On</item>
+        <item>Turn Off</item>
+    </string-array>
+
+    <string-array name="modes_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+
+</resources>
