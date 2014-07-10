@@ -20,6 +20,38 @@
             android:summary="@string/capture_home_long"
             android:key="capture_home"
             android:defaultValue="true"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="hardware_mods"
+        android:title="@string/startup_mods">
+        <ListPreference
+            android:key="wifi_mode"
+            android:title="@string/wifi_mode"
+            android:entries="@array/modes"
+            android:entryValues="@array/modes_values"
+            android:defaultValue="0"/>
+        <ListPreference
+            android:key="gps_mode"
+            android:title="@string/gps_mode"
+            android:entries="@array/modes"
+            android:entryValues="@array/modes_values"
+            android:defaultValue="1"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="hardware_exit"
+        android:title="@string/exit_mods">
+        <ListPreference
+            android:key="wifi_exit"
+            android:title="@string/wifi_mode"
+            android:entries="@array/modes"
+            android:entryValues="@array/modes_values"
+            android:defaultValue="0"/>
+        <ListPreference
+            android:key="gps_exit"
+            android:title="@string/gps_mode"
+            android:entries="@array/modes"
+            android:entryValues="@array/modes_values"
+            android:defaultValue="1"/>
         <CheckBoxPreference
             android:title="@string/bypassExitDialog"
             android:summary="@string/bypassExitDialog_long"
@@ -37,36 +69,14 @@
             android:defaultValue="false"
             android:dependency="kill_apps"/>
     </PreferenceCategory>
-    <PreferenceCategory
-        android:key="hardware_mods"
-        android:title="@string/hardware_mods">
-        <ListPreference
-            android:key="wifi_mode"
-            android:title="@string/wifi_mode"
-            android:entries="@array/modes"
-            android:entryValues="@array/modes_values"
-            android:defaultValue="0"/>
-        <ListPreference
-            android:key="gps_mode"
-            android:title="@string/gps_mode"
-            android:entries="@array/modes"
-            android:entryValues="@array/modes_values"
-            android:defaultValue="1"/>
-    </PreferenceCategory>
-    <PreferenceCategory
-        android:key="hardware_exit"
-        android:title="@string/hardware_exit">
-    <ListPreference
-        android:key="wifi_exit"
-        android:title="@string/wifi_mode"
-        android:entries="@array/modes"
-        android:entryValues="@array/modes_values"
-        android:defaultValue="0"/>
-    <ListPreference
-        android:key="gps_exit"
-        android:title="@string/gps_mode"
-        android:entries="@array/modes"
-        android:entryValues="@array/modes_values"
-        android:defaultValue="1"/>
+    <PreferenceCategory android:title="@string/about">
+        <Preference android:title="@string/Created_By"
+            android:summary="@string/Elad_Avron"/>
+        <Preference android:title="@string/help_support"
+            android:summary="@string/click_here"
+            android:key="help_support"/>
+        <Preference android:title="@string/Libraries_Used"
+            android:summary="@string/root_tools"
+            android:key="root_tools"/>
     </PreferenceCategory>
 </PreferenceScreen>

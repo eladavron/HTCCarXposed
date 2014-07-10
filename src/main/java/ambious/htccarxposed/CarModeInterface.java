@@ -2,7 +2,9 @@ package ambious.htccarxposed;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
@@ -37,6 +39,22 @@ public class CarModeInterface extends PreferenceActivity {
         findPreference("gps_exit").setOnPreferenceChangeListener(changeListener);
         findPreference("kill_apps").setOnPreferenceChangeListener(changeListener);
         findPreference("kill_root").setOnPreferenceChangeListener(changeListener);
+        findPreference("help_support").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://forum.xda-developers.com/xposed/modules/mod-htc-car-mode-xposed-t2769713"));
+                startActivity(browserIntent);
+                return true;
+            }
+        });
+        findPreference("root_tools").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Stericson/RootTools"));
+                startActivity(browserIntent);
+                return true;
+            }
+        });
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("gps_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
@@ -57,22 +75,21 @@ public class CarModeInterface extends PreferenceActivity {
                 prefFile.edit()
                         .putInt(preference.getKey(), newValueInt)
                         .commit();
-            } else if (preference.getClass() == CheckBoxPreference.class) {
+            } else if (preference.getClass() == CheckBoxPreference.class)
                 prefFile.edit()
                         .putBoolean(preference.getKey(), (Boolean) newValue)
                         .commit();
-            }
             if (preference.getKey().equals("allow_pulldown") && !(Boolean) newValue)
-            {
                 ((CheckBoxPreference)findPreference("allow_multitasking")).setChecked(false);
-            }
+            if (preference.getKey().equals("kill_apps") && (Boolean) newValue == false)
+                ((CheckBoxPreference) findPreference("kill_root")).setChecked(false);
             if (preference.getKey().equals("kill_root") && (Boolean) newValue)
             {
                 //Check for root privilages
                 if (!RootTools.isAccessGiven()) {
                     Log.e(LOG_TAG, "Couldn't get root privileges!");
                     Toast.makeText(getApplicationContext(), getText(R.string.root_failed), Toast.LENGTH_LONG).show();
-                    ((CheckBoxPreference) preference).setChecked(false);
+                    return false;
                 }
             }
             killBackground(); //If changes were made, they'll only apply if the car app is restarted.

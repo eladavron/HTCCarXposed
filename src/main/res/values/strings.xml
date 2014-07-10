@@ -1,8 +1,9 @@
 <resources>
     <!-- Headers -->
     <string name="interface_mods">Interface Mods</string>
-    <string name="hardware_mods">On Startup</string>
-    <string name="hardware_exit">On Exit</string>
+    <string name="startup_mods">On Startup</string>
+    <string name="exit_mods">On Exit</string>
+    <string name="about">About the Module</string>
 
     <!-- Settings -->
     <string name="app_name">Car Xposed!</string>
@@ -20,8 +21,16 @@
     <string name="killer_pref">Close opened apps</string>
     <string name="killer_long">Close all apps opened from within the Car app.</string>
     <string name="killer_root">Use root method</string>
-    <string name="killer_root_long">Some apps can only forcibly be closed using root.</string>
+    <string name="killer_root_long">Some apps can only be forcibly closed using root.</string>
     <string name="root_failed">Failed getting root privileges!</string>
+
+    <!-- About Strings -->
+    <string name="Created_By">Created By</string>
+    <string name="Elad_Avron">Elad Avron</string>
+    <string name="help_support">Help and Support</string>
+    <string name="click_here">Click here for the XDA-Developers thread.</string>
+    <string name="Libraries_Used">Libraries Used</string>
+    <string name="root_tools">RootTools 3.5 by Stericson.\n(Click for GitHub repository).</string>
 
     <string-array name="modes">
         <item>Don\'t Change</item>
