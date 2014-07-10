@@ -3,16 +3,15 @@ package ambious.htccarxposed;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.util.Log;
+import android.widget.Toast;
 
-import java.util.List;
+import com.stericson.RootTools.RootTools;
 
 public class CarModeInterface extends PreferenceActivity {
 
@@ -36,6 +35,8 @@ public class CarModeInterface extends PreferenceActivity {
         findPreference("gps_mode").setOnPreferenceChangeListener(changeListener);
         findPreference("wifi_exit").setOnPreferenceChangeListener(changeListener);
         findPreference("gps_exit").setOnPreferenceChangeListener(changeListener);
+        findPreference("kill_apps").setOnPreferenceChangeListener(changeListener);
+        findPreference("kill_root").setOnPreferenceChangeListener(changeListener);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("gps_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
@@ -65,7 +66,15 @@ public class CarModeInterface extends PreferenceActivity {
             {
                 ((CheckBoxPreference)findPreference("allow_multitasking")).setChecked(false);
             }
-
+            if (preference.getKey().equals("kill_root") && (Boolean) newValue)
+            {
+                //Check for root privilages
+                if (!RootTools.isAccessGiven()) {
+                    Log.e(LOG_TAG, "Couldn't get root privileges!");
+                    Toast.makeText(getApplicationContext(), getText(R.string.root_failed), Toast.LENGTH_LONG).show();
+                    ((CheckBoxPreference) preference).setChecked(false);
+                }
+            }
             killBackground(); //If changes were made, they'll only apply if the car app is restarted.
             return true;
         }
@@ -91,16 +100,7 @@ public class CarModeInterface extends PreferenceActivity {
      * Kills the car app in the background
      */
     private void killBackground() {
-        List<ApplicationInfo> packages;
-        PackageManager pm;
-        pm = getPackageManager();
-
-        //get a list of installed apps.
-        packages = pm.getInstalledApplications(0);
         ActivityManager mActivityManager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
-        for (ApplicationInfo packageInfo : packages) {
-            if (packageInfo.packageName.equals("com.htc.AutoMotive"))
-                mActivityManager.killBackgroundProcesses(packageInfo.packageName);
-        }
+        mActivityManager.killBackgroundProcesses("com.htc.AutoMotive");
     }
 }

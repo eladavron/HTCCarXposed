@@ -31,7 +31,13 @@ public final class R {
         public static final int hardware_exit=0x7f05000a;
         public static final int hardware_mods=0x7f05000b;
         public static final int interface_mods=0x7f05000c;
-        public static final int wifi_mode=0x7f05000d;
+        public static final int killer_desc=0x7f05000d;
+        public static final int killer_long=0x7f05000e;
+        public static final int killer_pref=0x7f05000f;
+        public static final int killer_root=0x7f050010;
+        public static final int killer_root_long=0x7f050011;
+        public static final int root_failed=0x7f050012;
+        public static final int wifi_mode=0x7f050013;
     }
     public static final class style {
         /**  Customize your theme here. 

@@ -4,27 +4,57 @@ package ambious.htccarxposed;
  * Created by Elad on 01/06/2014.
  */
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.KeyEvent;
-import de.robv.android.xposed.*;
+
+import java.util.ArrayList;
+
+import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XSharedPreferences;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-import static de.robv.android.xposed.XposedHelpers.*;
+import static de.robv.android.xposed.XposedHelpers.callMethod;
+import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
+import static de.robv.android.xposed.XposedHelpers.getBooleanField;
 
 public class Module implements IXposedHookLoadPackage {
     private XSharedPreferences xSharedPreferences;
+    private ArrayList<Intent> intentArray;
+    Context _mainContext;
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         XposedBridge.log("Loaded app: " + lpparam.packageName);
+
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
         if (!lpparam.packageName.equals("com.htc.AutoMotive")) //Make sure we only operate within the car-app
             return;
 
         XposedBridge.log("htccarxposed: HTC Automotive Loaded!");
+
+        /**
+         * Innitiate Context
+         */
+
+        findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
+            /**
+             * Works by intercepting the startup method and adding code after it runs
+             */
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                super.afterHookedMethod(param);
+                Context _this = (Context) param.thisObject; //Gets the active app instance
+                _mainContext = _this;
+            }
+        });
 
         /**
          * Multitasking - currently breaks dialer functionality
@@ -177,6 +207,37 @@ public class Module implements IXposedHookLoadPackage {
             });
         }
 
+        /**
+         * Log and kill all apps opened during session
+         */
+        if (xSharedPreferences.getBoolean("kill_apps",false)) {
+            findAndHookMethod("com.htc.AutoMotive.util.Utils", lpparam.classLoader, "safeStartActivity", Context.class, Intent.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    Context _this = (Context) param.thisObject;
+                    Context _context = (Context) param.args[0]; //Unused
+                    Intent _intent = (Intent) param.args[1]; //Add the new intent to list
+                    XposedBridge.log("htccarxposed: adding " + _intent.getComponent().getPackageName() + " to intent array.");
+                    Intent newIntent = new Intent(Intent.ACTION_RUN);
+                    newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
+                    newIntent.putExtra("packageName", _intent.getComponent().getPackageName());
+                    _mainContext.startService(newIntent);
+                }
+            });
+
+            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onDestroy", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    Context _this = (Context) param.thisObject; //Gets the active app instance
+                    XposedBridge.log("htccarxposed: sending kill command.");
+                    Intent newIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                    newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
+                    _mainContext.startService(newIntent);
+                }
+            });
+        }
 
         /**
          * Circumvent 'exit' dialog'
@@ -186,7 +247,7 @@ public class Module implements IXposedHookLoadPackage {
             findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "dispatchKeyEvent", KeyEvent.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    if (getBooleanField(param.thisObject, "bIsLeaveDialogShowing")) {
+                    if (getBooleanField(param.thisObject, "bIsLeaveDialogShowing")) { //Intercepts exit dialog
                         XposedBridge.log("htccarxposed: Bypassing exit dialog");
                         callMethod(param.thisObject, "finishCarmode");
                     }

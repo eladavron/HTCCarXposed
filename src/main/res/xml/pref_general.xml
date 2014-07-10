@@ -25,6 +25,17 @@
             android:summary="@string/bypassExitDialog_long"
             android:key="bypassExitDialog"
             android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:title="@string/killer_pref"
+            android:summary="@string/killer_long"
+            android:key="kill_apps"
+            android:defaultValue="false"/>
+        <CheckBoxPreference
+            android:title="@string/killer_root"
+            android:summary="@string/killer_root_long"
+            android:key="kill_root"
+            android:defaultValue="false"
+            android:dependency="kill_apps"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:key="hardware_mods"
