@@ -17,8 +17,10 @@ import java.util.ArrayList;
  * It's called "Killer" because it's original purpose was only to kill other apps.
  */
 public class Killer extends IntentService {
-    private final String LOG_TAG = "HTCCarModeXposed(Killer)";
+    private final String LOG_TAG = "HTCCarModeXposed - (Killer)";
     private static ArrayList<String> _mainAppList;
+    public static final int KILL_SWITCH = 0;
+    public static final int ADD_TO_LIST = 1;
 
     public Killer() {
         super("HTCCarModeXposed(Killer)");
@@ -28,56 +30,61 @@ public class Killer extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        if (intent.getAction().equals(Intent.ACTION_RUN)) { //ACTION_RUN is the intent used to run the 'kill switch'
-            if (intent.getStringExtra("packageName") != null || intent.getStringExtra("packageName") != null) {
-                _mainAppList.add(intent.getStringExtra("packageName"));
-                Log.i(LOG_TAG, "Adding package: " + intent.getStringExtra("packageName"));
-                Log.i(LOG_TAG, "Total number of packages listed: " + _mainAppList.size());
-            }
-        }
-        else if (intent.getAction().equals(Intent.ACTION_GET_CONTENT)) //ACTION_GET_CONTENT is the intent used to add apps to the 'kill' list.
-        {
-            try {
-                Log.i(LOG_TAG, "Got kill order! Killing " + _mainAppList.size() + " apps!");
-                Log.d(LOG_TAG, "Trying regular method first...");
-                ActivityManager am = (ActivityManager) getSystemService(Activity.ACTIVITY_SERVICE);
-                for (String packageName : _mainAppList) { //Cycle the apps in the 'kill' list and try to shut them down
-                    Log.i(LOG_TAG, "Attempting to shutdown " + packageName + " using regular method.");
-                    am.killBackgroundProcesses(packageName);
-                }
-                for (String packageName : _mainAppList) //Cycle the apps in the 'kill' switch and check if they're still up.
-                    if (!RootTools.isProcessRunning(packageName)) {
-                        Log.i("LOG_TAG", packageName + " closed successfully!");
-                        _mainAppList.remove(packageName);
-                    }
-                if (_mainAppList.size() > 0) //If any apps in the kill list are still open
-                {
-                    Log.w(LOG_TAG,"Some apps could not be closed using the regular method!");
-                    //For anything that remains, use the root method
-                    SharedPreferences prefFile =  getSharedPreferences("xPreferences", MODE_WORLD_READABLE);
-                    if (prefFile.getBoolean("kill_root",false)) { //Check if user enabled root-killing
-                        for (String packageName : _mainAppList) { //Cycle the remaining apps in the 'kill' list and kill using root method
-                            Log.i(LOG_TAG, "Attempting to shutdown " + packageName + " using root method.");
-                            RootTools.killProcess(packageName);
-                        }
-                    } else {
-                        Log.w(LOG_TAG,"Some apps could not be closed! User opted out of using root.");
-                    }
-                }
-                _mainAppList.clear();
-            }
-            catch (Exception ex)
-            {
-                Log.e(LOG_TAG,"Unknown Exception!");
-                ex.printStackTrace();
+        int action = intent.getIntExtra("action", -1);
+        switch (action) {
+            case -1:
+
+                Log.e(LOG_TAG, "Killer service received null intent action");
                 return;
-            }
-        }
-        else
-        {
-            Log.e(LOG_TAG, "Unrecognized intent!");
-            Log.e(LOG_TAG, "Intent action: " + intent.getAction());
-            Log.e(LOG_TAG, "Intent extra: " + intent.getStringExtra("packageName"));
+            case ADD_TO_LIST:
+                if (intent.getStringExtra("packageName") != null) {
+                    _mainAppList.add(intent.getStringExtra("packageName"));
+                    Log.i(LOG_TAG, "Adding package: " + intent.getStringExtra("packageName"));
+                    Log.i(LOG_TAG, "Total number of packages listed: " + _mainAppList.size());
+                    break;
+                } else {
+                    Log.e(LOG_TAG, "Received a null package name");
+                    return;
+                }
+            case KILL_SWITCH:
+                try {
+                    Log.i(LOG_TAG, "Got kill order! Killing " + _mainAppList.size() + " apps!");
+                    Log.d(LOG_TAG, "Trying regular method first...");
+                    ActivityManager am = (ActivityManager) getSystemService(Activity.ACTIVITY_SERVICE);
+                    for (String packageName : _mainAppList) { //Cycle the apps in the 'kill' list and try to shut them down
+                        Log.i(LOG_TAG, "Attempting to shutdown " + packageName + " using regular method.");
+                        am.killBackgroundProcesses(packageName);
+                    }
+                    for (String packageName : _mainAppList) //Cycle the apps in the 'kill' switch and check if they're still up.
+                        if (!RootTools.isProcessRunning(packageName)) {
+                            Log.i("LOG_TAG", packageName + " closed successfully!");
+                            _mainAppList.remove(packageName);
+                        }
+                    if (_mainAppList.size() > 0) //If any apps in the kill list are still open
+                    {
+                        Log.w(LOG_TAG, "Some apps could not be closed using the regular method!");
+                        //For anything that remains, use the root method
+                        SharedPreferences prefFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE);
+                        if (prefFile.getBoolean("kill_root", false)) { //Check if user enabled root-killing
+                            for (String packageName : _mainAppList) { //Cycle the remaining apps in the 'kill' list and kill using root method
+                                Log.i(LOG_TAG, "Attempting to shutdown " + packageName + " using root method.");
+                                RootTools.killProcess(packageName);
+                            }
+                        } else {
+                            Log.w(LOG_TAG, "Some apps could not be closed! User opted out of using root.");
+                        }
+                    }
+                    _mainAppList.clear();
+                } catch (Exception ex) {
+                    Log.e(LOG_TAG, "Unknown Exception!");
+                    ex.printStackTrace();
+                    return;
+                }
+                break;
+            default:
+                Log.e(LOG_TAG, "Unrecognized intent!");
+                Log.e(LOG_TAG, "Intent action: " + action);
+                return;
         }
     }
 }

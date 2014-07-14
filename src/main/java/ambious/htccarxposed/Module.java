@@ -7,13 +7,9 @@ package ambious.htccarxposed;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.location.LocationManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.KeyEvent;
-
-import java.util.ArrayList;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -28,7 +24,7 @@ import static de.robv.android.xposed.XposedHelpers.getBooleanField;
 
 public class Module implements IXposedHookLoadPackage {
     private XSharedPreferences xSharedPreferences;
-    private ArrayList<Intent> intentArray;
+
     Context _mainContext;
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
@@ -57,28 +53,23 @@ public class Module implements IXposedHookLoadPackage {
         });
 
         /**
-         * Multitasking - currently breaks dialer functionality
+         * Multitasking  - currently inoperable
          */
-        final boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", false); //Check user settings - default is false
-        if (allow_multitasking) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "sendBroadCast", boolean.class, new XC_MethodHook() {
+//        final boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", false); //Check user settings - default is false
+//        if (allow_multitasking) {
+//            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "getAppOpsEnableMode", boolean.class, new XC_MethodReplacement() {
+//                @Override
+//                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+//                    return 0;
+//                }
+//            });
+//        }
 
-                /**
-                 * Intercepts the method and force it to broadcast 'false', which enables the 'recent-apps' button but also breaks the in-app dialer for some reason.
-                 */
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    XposedBridge.log("htccarxposed: Attempting to enable multi-tasking!");
-                    param.args[0] = false;
-                }
-            });
-        }
 
-        final boolean allow_pulldown = xSharedPreferences.getBoolean("allow_pulldown", true); //Check user settings - default is true
         /**
          * Enable statusbar - also displays the 'recent-apps' while not actually enabling it.
          */
+        final boolean allow_pulldown = xSharedPreferences.getBoolean("allow_pulldown", true); //Check user settings - default is true
         if (allow_pulldown) {
             findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "setStatusBarLocked", boolean.class, new XC_MethodReplacement() {
 
@@ -114,7 +105,23 @@ public class Module implements IXposedHookLoadPackage {
         }
 
         /**
-         * Startup mods
+         * Wakelock mod - enabled by default.
+         * Sets whether to keep screen on or not.
+         */
+        boolean wakelock = xSharedPreferences.getBoolean("wakelock",true);
+        if (!wakelock)
+        {
+            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "acquireWakeLock", boolean.class, new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    XposedBridge.log("htccarxposed: Wakelock released.");
+                    return null;
+                }
+            });
+        }
+
+        /**
+         * Startup Wi-Fi Action
          */
         final int wifi_mode = xSharedPreferences.getInt("wifi_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         if (wifi_mode != 0) {
@@ -138,29 +145,8 @@ public class Module implements IXposedHookLoadPackage {
             });
         }
 
-        final int gps_mode = xSharedPreferences.getInt("gps_mode", 1); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-        if (gps_mode != 0) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
-                /**
-                 * Works by intercepting the startup method and adding code after it runs
-                 */
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    Context _this = (Context) param.thisObject; //Gets the active app instance
-                    if (gps_mode == 1) {
-                        XposedBridge.log("htccarxposed: Turning GPS on!");
-                        turnGpsOn(_this);
-                    } else if (gps_mode == 2) {
-                        XposedBridge.log("htccarxposed: Turning GPS off!");
-                        turnGpsOff(_this);
-                    }
-                }
-            });
-        }
-
         /*
-        * Exit mods
+        * Exit Wi-Fi Action
         */
 
         final int wifi_exit = xSharedPreferences.getInt("wifi_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
@@ -184,29 +170,6 @@ public class Module implements IXposedHookLoadPackage {
             });
         }
 
-
-        final int gps_exit = xSharedPreferences.getInt("gps_exit", 1);
-        if (gps_exit != 0) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onPause", new XC_MethodHook() {
-
-                /**
-                 * Works by intercepting the exit method and adding code BEFORE it runs (adding it after just won't work).
-                 */
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    Context _this = (Context) param.thisObject; //Gets the active app instance
-                    if (gps_exit == 1) {
-                        XposedBridge.log("htccarxposed: Turning GPS on!");
-                        turnGpsOn(_this);
-                    } else if (gps_exit == 2) {
-                        XposedBridge.log("htccarxposed: Turning GPS off!");
-                        turnGpsOff(_this);
-                    }
-                }
-            });
-        }
-
         /**
          * Log and kill all apps opened during session
          */
@@ -215,14 +178,9 @@ public class Module implements IXposedHookLoadPackage {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
-                    Context _this = (Context) param.thisObject;
-                    Context _context = (Context) param.args[0]; //Unused
                     Intent _intent = (Intent) param.args[1]; //Add the new intent to list
                     XposedBridge.log("htccarxposed: adding " + _intent.getComponent().getPackageName() + " to intent array.");
-                    Intent newIntent = new Intent(Intent.ACTION_RUN);
-                    newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
-                    newIntent.putExtra("packageName", _intent.getComponent().getPackageName());
-                    _mainContext.startService(newIntent);
+                    callService(Killer.ADD_TO_LIST,"packageName",_intent.getComponent().getPackageName());
                 }
             });
 
@@ -230,11 +188,8 @@ public class Module implements IXposedHookLoadPackage {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
-                    Context _this = (Context) param.thisObject; //Gets the active app instance
                     XposedBridge.log("htccarxposed: sending kill command.");
-                    Intent newIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                    newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
-                    _mainContext.startService(newIntent);
+                    callService(Killer.KILL_SWITCH);
                 }
             });
         }
@@ -256,55 +211,13 @@ public class Module implements IXposedHookLoadPackage {
         }
     }
 
-
-
-    /**
-     * GPS it tricky business - for privacy reasons, apps should not be able to turn it on and off.
-     * Instead, we use a 'root' trick that's otherwise not accessible to apps.
-     * Since Xposed requires root, we're assuming the device is system-writable.
-     * Honestly though I have no idea how this works - it's copied code from http://stackoverflow.com/a/18946258/601934
-     */
-    private String beforeEnable;
-    private void turnGpsOn (Context context) {
-        beforeEnable = Settings.Secure.getString (context.getContentResolver(),
-                Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-        String newSet = String.format ("%s,%s",
-                beforeEnable,
-                LocationManager.GPS_PROVIDER);
-        try {
-            Settings.Secure.putString (context.getContentResolver(),
-                    Settings.Secure.LOCATION_PROVIDERS_ALLOWED,
-                    newSet);
-        } catch(Exception e) {}
-    }
-
-
-    private void turnGpsOff (Context context) {
-        if (null == beforeEnable) {
-            String str = Settings.Secure.getString (context.getContentResolver(),
-                    Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-            if (null == str) {
-                str = "";
-            } else {
-                String[] list = str.split (",");
-                str = "";
-                int j = 0;
-                for (int i = 0; i < list.length; i++) {
-                    if (!list[i].equals (LocationManager.GPS_PROVIDER)) {
-                        if (j > 0) {
-                            str += ",";
-                        }
-                        str += list[i];
-                        j++;
-                    }
-                }
-                beforeEnable = str;
-            }
-        }
-        try {
-            Settings.Secure.putString (context.getContentResolver(),
-                    Settings.Secure.LOCATION_PROVIDERS_ALLOWED,
-                    beforeEnable);
-        } catch(Exception e) {}
+    private void callService(int action, String... args)
+    {
+        Intent newIntent = new Intent();
+        newIntent.putExtra("action",action);
+        newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
+        if (action == Killer.ADD_TO_LIST)
+            newIntent.putExtra(args[0],args[1]);
+        _mainContext.startService(newIntent);
     }
 }

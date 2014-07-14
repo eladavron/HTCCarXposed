@@ -33,17 +33,17 @@ public final class R {
         public static final int capture_home_long=0x7f05000c;
         public static final int click_here=0x7f05000d;
         public static final int exit_mods=0x7f05000e;
-        public static final int gps_mode=0x7f05000f;
-        public static final int help_support=0x7f050010;
-        public static final int interface_mods=0x7f050011;
-        public static final int killer_desc=0x7f050012;
-        public static final int killer_long=0x7f050013;
-        public static final int killer_pref=0x7f050014;
-        public static final int killer_root=0x7f050015;
-        public static final int killer_root_long=0x7f050016;
-        public static final int root_failed=0x7f050017;
-        public static final int root_tools=0x7f050018;
-        public static final int startup_mods=0x7f050019;
+        public static final int help_support=0x7f05000f;
+        public static final int interface_mods=0x7f050010;
+        public static final int killer_desc=0x7f050011;
+        public static final int killer_long=0x7f050012;
+        public static final int killer_pref=0x7f050013;
+        public static final int killer_root=0x7f050014;
+        public static final int killer_root_long=0x7f050015;
+        public static final int root_failed=0x7f050016;
+        public static final int root_tools=0x7f050017;
+        public static final int startup_mods=0x7f050018;
+        public static final int wakelock=0x7f050019;
         public static final int wifi_mode=0x7f05001a;
     }
     public static final class style {

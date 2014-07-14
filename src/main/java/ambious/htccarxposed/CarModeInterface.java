@@ -2,9 +2,7 @@ package ambious.htccarxposed;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
@@ -15,7 +13,7 @@ import android.widget.Toast;
 
 import com.stericson.RootTools.RootTools;
 
-public class CarModeInterface extends PreferenceActivity {
+public class CarModeInterface extends PreferenceActivity  implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private SharedPreferences prefFile;
     private final String LOG_TAG = "HTCCarModeXposed";
@@ -23,42 +21,10 @@ public class CarModeInterface extends PreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.pref_general);
-
-        /**
-         * Binds all preferences to the default listener. There's probably a way to do it automatically, but I got lazy
-         */
-
-        prefFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE);
-        findPreference("allow_pulldown").setOnPreferenceChangeListener(changeListener);
-        findPreference("allow_multitasking").setOnPreferenceChangeListener(changeListener);
-        findPreference("capture_home").setOnPreferenceChangeListener(changeListener);
-        findPreference("bypassExitDialog").setOnPreferenceChangeListener(changeListener);
-        findPreference("wifi_mode").setOnPreferenceChangeListener(changeListener);
-        findPreference("gps_mode").setOnPreferenceChangeListener(changeListener);
-        findPreference("wifi_exit").setOnPreferenceChangeListener(changeListener);
-        findPreference("gps_exit").setOnPreferenceChangeListener(changeListener);
-        findPreference("kill_apps").setOnPreferenceChangeListener(changeListener);
-        findPreference("kill_root").setOnPreferenceChangeListener(changeListener);
-        findPreference("help_support").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://forum.xda-developers.com/xposed/modules/mod-htc-car-mode-xposed-t2769713"));
-                startActivity(browserIntent);
-                return true;
-            }
-        });
-        findPreference("root_tools").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Stericson/RootTools"));
-                startActivity(browserIntent);
-                return true;
-            }
-        });
+        prefFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE); //Enable the 'world-readable' preference file. This is neccesary because the module can't access the default one.
+        getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
-        syncListPrefSummary((ListPreference) findPreference("gps_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
-        syncListPrefSummary((ListPreference) findPreference("gps_exit"));
         killBackground(); //Kill any open instances of the car-app so settings are applied next time it's accessed.
     }
 
@@ -113,6 +79,36 @@ public class CarModeInterface extends PreferenceActivity {
         }
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        Preference preference = findPreference(s);
+        if (preference.getClass() == ListPreference.class) {
+            int newValueInt = Integer.parseInt(sharedPreferences.getString(s,null));
+            preference.setSummary(((ListPreference) preference).getEntries()[newValueInt]);
+            prefFile.edit()
+                    .putInt(s, newValueInt)
+                    .commit();
+        } else if (preference.getClass() == CheckBoxPreference.class)
+            prefFile.edit()
+                    .putBoolean(s, sharedPreferences.getBoolean(s,false))
+                    .commit();
+        if (s.equals("allow_pulldown") && !sharedPreferences.getBoolean(s,true))
+            ((CheckBoxPreference)findPreference("allow_multitasking")).setChecked(false);
+        if (s.equals("kill_apps") && sharedPreferences.getBoolean(s,false) == false)
+            ((CheckBoxPreference) findPreference("kill_root")).setChecked(false);
+        if (s.equals("kill_root") && sharedPreferences.getBoolean(s,false))
+        {
+            //Check for root privilages
+            if (!RootTools.isAccessGiven()) {
+                Log.e(LOG_TAG, "Couldn't get root privileges!");
+                ((CheckBoxPreference)preference).setChecked(false);
+                Toast.makeText(getApplicationContext(), getText(R.string.root_failed), Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+        killBackground(); //If changes were made, they'll only apply if the car app is restarted.
+    }
+
     /**
      * Kills the car app in the background
      */
@@ -120,4 +116,5 @@ public class CarModeInterface extends PreferenceActivity {
         ActivityManager mActivityManager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
         mActivityManager.killBackgroundProcesses("com.htc.AutoMotive");
     }
+
 }
