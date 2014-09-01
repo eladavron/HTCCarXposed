@@ -42,12 +42,13 @@ public class Module implements IXposedHookLoadPackage {
          */
         if (lpparam.packageName.equals("android")) {
             XposedBridge.log("htccarxposed: Hooked into Android Policy!");
-            final boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", false); //Check user settings - default is false
             Class<?> HandleRecentAppsRunnable = findClass("com.android.internal.policy.impl.PhoneWindowManager.HandleRecentAppsRunnable",lpparam.classLoader);
             findAndHookMethod(HandleRecentAppsRunnable, "run", new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
+                    xSharedPreferences.reload();
+                    boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", true); //Check user settings - default is true. Has to be here otherwise it'll be set on startup.
                     if (getBooleanField(getSurroundingThis(param.thisObject),"mAutoMotiveEnabled") && allow_multitasking) //Only intercepts if "allow multitasking" is set and car mode is active.
                     {
                         XposedBridge.log("htccarxposed: Intercepted Recent Apps request!");
