@@ -33,7 +33,6 @@ public class Killer extends IntentService {
         int action = intent.getIntExtra("action", -1);
         switch (action) {
             case -1:
-
                 Log.e(LOG_TAG, "Killer service received null intent action");
                 return;
             case ADD_TO_LIST:

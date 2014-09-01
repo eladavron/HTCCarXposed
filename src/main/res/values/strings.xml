@@ -10,7 +10,7 @@
     <string name="allow_pulldown">Allow Statusbar Pulldown</string>
     <string name="allow_pulldown_long">Restore pulldown functionality to the statusbar.</string>
     <string name="allow_multitasking">Allow Multi-Tasking</string>
-    <string name="allow_multitasking_long">Restore \'Recent Apps\' functionality.\nWarning: Breaks Dialer and Music Player!!</string>
+    <string name="allow_multitasking_long">Restore \'Recent Apps\' functionality.</string>
     <string name="bypassExitDialog">Exit without confirmation</string>
     <string name="bypassExitDialog_long">Skip the confirmation dialog when exiting the Car app.</string>
     <string name="capture_home">Take over \'Home\' button</string>
@@ -23,6 +23,7 @@
     <string name="killer_root_long">Some apps can only be forcibly closed using root.</string>
     <string name="root_failed">Failed getting root privileges!</string>
     <string name="wakelock">Keep Screen On</string>
+
     <!-- About Strings -->
     <string name="Created_By">Created By</string>
     <string name="Elad_Avron">Elad Avron</string>
@@ -42,6 +43,4 @@
         <item>1</item>
         <item>2</item>
     </string-array>
-
-
 </resources>

@@ -9,12 +9,12 @@
             android:summary="@string/allow_pulldown_long"
             android:key="allow_pulldown"
             android:defaultValue="true"/>
-        <!--<CheckBoxPreference-->
-            <!--android:title="@string/allow_multitasking"-->
-            <!--android:summary="@string/allow_multitasking_long"-->
-            <!--android:key="allow_multitasking"-->
-            <!--android:defaultValue="true"-->
-            <!--android:dependency="allow_pulldown"/>-->
+        <CheckBoxPreference
+            android:title="@string/allow_multitasking"
+            android:summary="@string/allow_multitasking_long"
+            android:key="allow_multitasking"
+            android:defaultValue="true"
+            android:dependency="allow_pulldown"/>
         <CheckBoxPreference
             android:title="@string/capture_home"
             android:summary="@string/capture_home_long"

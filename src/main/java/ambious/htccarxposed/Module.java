@@ -20,7 +20,10 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
+import static de.robv.android.xposed.XposedHelpers.findClass;
 import static de.robv.android.xposed.XposedHelpers.getBooleanField;
+import static de.robv.android.xposed.XposedHelpers.getSurroundingThis;
+import static de.robv.android.xposed.XposedHelpers.setBooleanField;
 
 public class Module implements IXposedHookLoadPackage {
     private XSharedPreferences xSharedPreferences;
@@ -31,19 +34,42 @@ public class Module implements IXposedHookLoadPackage {
         XposedBridge.log("Loaded app: " + lpparam.packageName);
 
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
-        if (!lpparam.packageName.equals("com.htc.AutoMotive")) //Make sure we only operate within the car-app
+        if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app
             return;
+
+        /**
+         * Multitasking - this part intercepts "Recent Apps" requests, and if "Autmotive" (carmode) is set to "true", it over-rides it to "false", thus allowing multi-tasking.
+         */
+        if (lpparam.packageName.equals("android")) {
+            XposedBridge.log("htccarxposed: Hooked into Android Policy!");
+            final boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", false); //Check user settings - default is false
+            Class<?> HandleRecentAppsRunnable = findClass("com.android.internal.policy.impl.PhoneWindowManager.HandleRecentAppsRunnable",lpparam.classLoader);
+            findAndHookMethod(HandleRecentAppsRunnable, "run", new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    if (getBooleanField(getSurroundingThis(param.thisObject),"mAutoMotiveEnabled") && allow_multitasking) //Only intercepts if "allow multitasking" is set and car mode is active.
+                    {
+                        XposedBridge.log("htccarxposed: Intercepted Recent Apps request!");
+                        setBooleanField(getSurroundingThis(param.thisObject), "mAutoMotiveEnabled", false);
+                    }
+                }
+            });
+            return;
+        }
+
+        /**
+         * Anything beyond this point is on com.htc.Automotive
+         */
 
         XposedBridge.log("htccarxposed: HTC Automotive Loaded!");
 
+
         /**
-         * Innitiate Context
+         * Innitiate Context. This create a 'mainContext' object that holds the car app's instance.
          */
 
         findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
-            /**
-             * Works by intercepting the startup method and adding code after it runs
-             */
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
@@ -51,20 +77,6 @@ public class Module implements IXposedHookLoadPackage {
                 _mainContext = _this;
             }
         });
-
-        /**
-         * Multitasking  - currently inoperable
-         */
-//        final boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", false); //Check user settings - default is false
-//        if (allow_multitasking) {
-//            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "getAppOpsEnableMode", boolean.class, new XC_MethodReplacement() {
-//                @Override
-//                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
-//                    return 0;
-//                }
-//            });
-//        }
-
 
         /**
          * Enable statusbar - also displays the 'recent-apps' while not actually enabling it.
@@ -83,7 +95,6 @@ public class Module implements IXposedHookLoadPackage {
                 }
             });
         }
-
 
         /**
          * Home button - currently works by intercepting and bypassing a method called 'enableUiMode', but it may break other things.
