@@ -1,8 +1,10 @@
 package ambious.htccarxposed;
 
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
@@ -20,11 +22,13 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.pref_general);
+        addPreferencesFromResource(R.xml.prefs);
         prefFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE); //Enable the 'world-readable' preference file. This is neccesary because the module can't access the default one.
         getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
+//        syncListPrefSummary((ListPreference) findPreference("gps_mode"));
+//        syncListPrefSummary((ListPreference) findPreference("gps_exit"));
         killBackground(); //Kill any open instances of the car-app so settings are applied next time it's accessed.
     }
 
@@ -49,15 +53,6 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
                 ((CheckBoxPreference)findPreference("allow_multitasking")).setChecked(false);
             if (preference.getKey().equals("kill_apps") && (Boolean) newValue == false)
                 ((CheckBoxPreference) findPreference("kill_root")).setChecked(false);
-            if (preference.getKey().equals("kill_root") && (Boolean) newValue)
-            {
-                //Check for root privilages
-                if (!RootTools.isAccessGiven()) {
-                    Log.e(LOG_TAG, "Couldn't get root privileges!");
-                    Toast.makeText(getApplicationContext(), getText(R.string.root_failed), Toast.LENGTH_LONG).show();
-                    return false;
-                }
-            }
             killBackground(); //If changes were made, they'll only apply if the car app is restarted.
             return true;
         }
@@ -104,6 +99,44 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
                 ((CheckBoxPreference)preference).setChecked(false);
                 Toast.makeText(getApplicationContext(), getText(R.string.root_failed), Toast.LENGTH_LONG).show();
                 return;
+            }
+        }
+
+        /*
+        //This is temporarily removed due to it causing the module not to see the app interface
+
+        if (s.equals("enable_app_icon"))
+        {
+            if  (sharedPreferences.getBoolean(s,true))
+            {
+                //Re-adds the icon to the launcher
+                PackageManager p = getPackageManager();
+                p.setComponentEnabledSetting(getComponentName(), PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP);
+            } else {
+                //Removes the app Icon from the launcher - it's still accessibly from the Xposed Module Installer.
+                PackageManager p = getPackageManager();
+                p.setComponentEnabledSetting(getComponentName(), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            }
+        }
+        */
+
+        if (s.equals("enable_toggler"))
+        {
+            ComponentName cn = new ComponentName(this, "ambious.htccarxposed.CarToggler");
+            if (cn == null)
+            {
+                Log.w(LOG_TAG,"ComponentName was null!");
+                return;
+            }
+            if  (sharedPreferences.getBoolean(s,true))
+            {
+                //Re-adds the toggler icon to the launcher
+                PackageManager p = getPackageManager();
+                p.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP);
+            } else {
+                //Removes the toggler Icon from the launcher - it's still accessibly from the Xposed Module Installer.
+                PackageManager p = getPackageManager();
+                p.setComponentEnabledSetting(cn, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             }
         }
         killBackground(); //If changes were made, they'll only apply if the car app is restarted.

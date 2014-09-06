@@ -65,17 +65,76 @@ public class Module implements IXposedHookLoadPackage {
 
         XposedBridge.log("htccarxposed: HTC Automotive Loaded!");
 
+        final Class<?> mainClass = findClass("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader);
 
         /**
-         * Innitiate Context. This create a 'mainContext' object that holds the car app's instance.
+         * Startup Action
          */
+        final int wifi_mode = xSharedPreferences.getInt("wifi_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+//        final int gps_mode = xSharedPreferences.getInt("gps_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+        if (wifi_mode != 0) {
+            findAndHookMethod(mainClass, "onCreate", Bundle.class, new XC_MethodHook() {
 
-        findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
+                /**
+                 * Works by intercepting the startup method and adding code after it runs
+                 */
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                    //Set global context to the car app
+                    Context _this = (Context) param.thisObject; //Gets the active app instance
+                    _mainContext = _this;
+
+                    //Startup mods
+                    if (wifi_mode != 0) {
+                        WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
+                        if (wifi_mode == 1) {
+                            wifiManager.setWifiEnabled(true);
+                            XposedBridge.log("htccarxposed: Turning WIFI on!");
+                        } else if (wifi_mode == 2) {
+                            wifiManager.setWifiEnabled(false);
+                            XposedBridge.log("htccarxposed: Turning WIFI off!");
+                        }
+                    }
+                    /*
+                    //GPS mods are not working for some uknown reason at the moment.
+
+                    if (gps_mode != 0)
+                    {
+                        final Intent intent = new Intent("com.htc.settings.action.SET_GPS_ENABLED");
+                        boolean newStatus;
+                        if (gps_mode == 1)
+                            newStatus = true;
+                        else if (gps_mode == 2)
+                            newStatus = false;
+                        else {
+                            XposedBridge.log("htccarxposed: Unrecognized GPS mode: " + gps_mode);
+                            return;
+                        }
+                        intent.putExtra("extra_enabled", newStatus);
+                        _mainContext.sendBroadcast(intent);
+                    }
+                    */
+                }
+            });
+        }
+
+        /**
+         * This adds an intent handler for the car app - if it detects a 'shutdown' intent it will, of course, shut it down.
+         */
+        findAndHookMethod(mainClass, "onNewIntent", Intent.class, new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
-                Context _this = (Context) param.thisObject; //Gets the active app instance
-                _mainContext = _this;
+                Intent _intent = (Intent) param.args[0];
+                XposedBridge.log("htccarxposed: Intercepted new intent!");
+                XposedBridge.log("htccarxposed: Intent action: " + _intent.getAction());
+                if (_intent.getBooleanExtra("killOrder",false))
+                {
+                    XposedBridge.log("htccarxposed: Killing app by request of toggler");
+                    callMethod(param.thisObject, "finishCarmode");
+                    return;
+                }
             }
         });
 
@@ -84,7 +143,7 @@ public class Module implements IXposedHookLoadPackage {
          */
         final boolean allow_pulldown = xSharedPreferences.getBoolean("allow_pulldown", true); //Check user settings - default is true
         if (allow_pulldown) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "setStatusBarLocked", boolean.class, new XC_MethodReplacement() {
+            findAndHookMethod(mainClass, "setStatusBarLocked", boolean.class, new XC_MethodReplacement() {
 
                 /**
                  * Intercepts the method and completely replaces it.
@@ -100,11 +159,10 @@ public class Module implements IXposedHookLoadPackage {
         /**
          * Home button - currently works by intercepting and bypassing a method called 'enableUiMode', but it may break other things.
          */
-        //TODO: This might be a risky way to perform this, check if you can actively remove the 'HOME' intent instead
 
         boolean capture_home = xSharedPreferences.getBoolean("capture_home", true);
         if (!capture_home) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "enableUiMode", new XC_MethodReplacement() {
+            findAndHookMethod(mainClass, "enableUiMode", new XC_MethodReplacement() {
                 /**
                  * Intercepts the method and completely replaces it.
                  */
@@ -123,7 +181,7 @@ public class Module implements IXposedHookLoadPackage {
         boolean wakelock = xSharedPreferences.getBoolean("wakelock",true);
         if (!wakelock)
         {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "acquireWakeLock", boolean.class, new XC_MethodReplacement() {
+            findAndHookMethod(mainClass, "acquireWakeLock", boolean.class, new XC_MethodReplacement() {
                 @Override
                 protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
                     XposedBridge.log("htccarxposed: Wakelock released.");
@@ -132,76 +190,68 @@ public class Module implements IXposedHookLoadPackage {
             });
         }
 
-        /**
-         * Startup Wi-Fi Action
-         */
-        final int wifi_mode = xSharedPreferences.getInt("wifi_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-        if (wifi_mode != 0) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
 
-                /**
-                 * Works by intercepting the startup method and adding code after it runs
-                 */
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
-                    if (wifi_mode == 1) {
-                        wifiManager.setWifiEnabled(true);
-                        XposedBridge.log("htccarxposed: Turning WIFI on!");
-                    } else if (wifi_mode == 2) {
-                        wifiManager.setWifiEnabled(false);
-                        XposedBridge.log("htccarxposed: Turning WIFI off!");
-                    }
-                }
-            });
-        }
 
         /*
         * Exit Wi-Fi Action
         */
-
         final int wifi_exit = xSharedPreferences.getInt("wifi_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-        if (wifi_exit != 0) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onPause", new XC_MethodHook() {
+//        final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+        final boolean kill_apps = xSharedPreferences.getBoolean("kill_apps",false);
+        if (wifi_exit != 0 || kill_apps)
+            findAndHookMethod(mainClass, "onDestroy", new XC_MethodHook() {
                 @Override
-                /**
-                 * Works by intercepting the exit method and adding code BEFORE it runs (adding it after just won't work).
-                 */
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
-                    if (wifi_exit == 1) {
-                        wifiManager.setWifiEnabled(true);
-                        XposedBridge.log("htccarxposed: Turning WIFI on!");
-                    } else if (wifi_exit == 2) {
-                        wifiManager.setWifiEnabled(false);
-                        XposedBridge.log("htccarxposed: Turning WIFI off!");
+                    if (kill_apps) {
+                        super.beforeHookedMethod(param);
+                        XposedBridge.log("htccarxposed: Sending kill command.");
+                        callService(Killer.KILL_SWITCH);
                     }
+                    if (wifi_exit != 0) {
+                        WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
+                        if (wifi_exit == 1) {
+                            wifiManager.setWifiEnabled(true);
+                            XposedBridge.log("htccarxposed: Turning WIFI on!");
+                        } else if (wifi_exit == 2) {
+                            wifiManager.setWifiEnabled(false);
+                            XposedBridge.log("htccarxposed: Turning WIFI off!");
+                        }
+                    }
+
+                    /*
+                    //GPS Settings do not work at the moment for an unknown reason
+
+                    if (gps_exit != 0)
+                    {
+                        final Intent intent = new Intent("com.htc.settings.action.SET_GPS_ENABLED");
+                        boolean newStatus;
+                        if (gps_exit == 1)
+                            newStatus = true;
+                        else if (gps_exit == 2)
+                            newStatus = false;
+                        else {
+                            XposedBridge.log("htccarxposed: Unrecognized GPS mode: " + gps_exit);
+                            return;
+                        }
+                        intent.putExtra("extra_enabled", newStatus);
+                        _mainContext.sendBroadcast(intent);
+                    }
+                    */
                 }
             });
-        }
 
         /**
          * Log and kill all apps opened during session
          */
-        if (xSharedPreferences.getBoolean("kill_apps",false)) {
+        if (kill_apps) {
             findAndHookMethod("com.htc.AutoMotive.util.Utils", lpparam.classLoader, "safeStartActivity", Context.class, Intent.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                     super.beforeHookedMethod(param);
                     Intent _intent = (Intent) param.args[1]; //Add the new intent to list
                     XposedBridge.log("htccarxposed: adding " + _intent.getComponent().getPackageName() + " to intent array.");
-                    callService(Killer.ADD_TO_LIST,"packageName",_intent.getComponent().getPackageName());
-                }
-            });
-
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "onDestroy", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    XposedBridge.log("htccarxposed: sending kill command.");
-                    callService(Killer.KILL_SWITCH);
+                    if (!_intent.getComponent().getPackageName().equals("ambious.htccarxposed"))
+                        callService(Killer.ADD_TO_LIST,"packageName",_intent.getComponent().getPackageName());
                 }
             });
         }
@@ -211,9 +261,10 @@ public class Module implements IXposedHookLoadPackage {
          */
         final boolean bypassExitDialog = xSharedPreferences.getBoolean("bypassExitDialog", true);
         if (bypassExitDialog) {
-            findAndHookMethod("com.htc.AutoMotive.carousel.MainActivity", lpparam.classLoader, "dispatchKeyEvent", KeyEvent.class, new XC_MethodHook() {
+            findAndHookMethod(mainClass, "dispatchKeyEvent", KeyEvent.class, new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
                     if (getBooleanField(param.thisObject, "bIsLeaveDialogShowing")) { //Intercepts exit dialog
                         XposedBridge.log("htccarxposed: Bypassing exit dialog");
                         callMethod(param.thisObject, "finishCarmode");

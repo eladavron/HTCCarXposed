@@ -37,6 +37,10 @@ public class Killer extends IntentService {
                 return;
             case ADD_TO_LIST:
                 if (intent.getStringExtra("packageName") != null) {
+                    if (intent.getStringExtra("packageName").equals(this.getPackageName())) {
+                        Log.i(LOG_TAG, "Skipping from adding self to kill list!");
+                        return;
+                    }
                     _mainAppList.add(intent.getStringExtra("packageName"));
                     Log.i(LOG_TAG, "Adding package: " + intent.getStringExtra("packageName"));
                     Log.i(LOG_TAG, "Total number of packages listed: " + _mainAppList.size());

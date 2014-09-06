@@ -1,0 +1,31 @@
+Changelog:
+=========
+
+Version 1.6:
+* Added the "App Toggler" which allows to shut down the car app through a global shortcut, or launch it if it's already closed.
+* Fixed a bug where Wi-Fi would turn off even by navigating away from the Car app and not just closing it.
+* GPS mods added back to code but not yet working (they're commented out for the git commit).
+
+
+Version 1.5:
+* Fixed "Multitasking"! Yes, the "Recent Apps" button now works and doesn't break anything! Thanks to the brilliant RichmondoUK for pointing me in the right direction.
+* Removed GPS mods - it wasn't working as well as I had hoped due to android privacy overrides.
+
+Version 1.4:
+* Added 'Exit mods':
+** Change GPS and Wi-Fi states on exit
+** Close apps opened from the Car App (either using a regular shut-down which doesn't always work or the more powerful 'root' method).
+* Moved the "Exit without confirmation" option under this category
+* Some code touch-ups
+* Version bump due to mis-fire on the publish button :-|
+
+Version 1.2:
+* Default settings will bow be applied upon installation.
+* Added an option to bypass the exit confirmation dialog
+* Added the option to turn GPS and Wi-Fi on or off at startup.
+* You can also choose to - obviously - not change them at all.
+
+Version 1.1:
+* Interface added! You can now turn mods on and off selectively.
+* Added the option to release the 'Home' button.
+* New icon, slightly less ugly I hope.

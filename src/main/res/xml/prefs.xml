@@ -34,6 +34,12 @@
             android:entries="@array/modes"
             android:entryValues="@array/modes_values"
             android:defaultValue="0"/>
+        <!--<ListPreference-->
+            <!--android:key="gps_mode"-->
+            <!--android:title="@string/gps_mode"-->
+            <!--android:entries="@array/modes"-->
+            <!--android:entryValues="@array/modes_values"-->
+            <!--android:defaultValue="0"/>-->
     </PreferenceCategory>
     <PreferenceCategory
         android:key="hardware_exit"
@@ -44,6 +50,12 @@
             android:entries="@array/modes"
             android:entryValues="@array/modes_values"
             android:defaultValue="0"/>
+        <!--<ListPreference-->
+            <!--android:key="gps_exit"-->
+            <!--android:title="@string/gps_mode"-->
+            <!--android:entries="@array/modes"-->
+            <!--android:entryValues="@array/modes_values"-->
+            <!--android:defaultValue="0"/>-->
         <CheckBoxPreference
             android:title="@string/bypassExitDialog"
             android:summary="@string/bypassExitDialog_long"
@@ -60,6 +72,26 @@
             android:key="kill_root"
             android:defaultValue="false"
             android:dependency="kill_apps"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/mod_settings"
+        android:key="mod_settings">
+        <!--<CheckBoxPreference-->
+            <!--android:title="@string/enable_app_icon"-->
+            <!--android:summary="@string/enable_app_icon_long"-->
+            <!--android:key="enable_app_icon"-->
+            <!--android:defaultValue="true"/>-->
+        <CheckBoxPreference
+            android:title="@string/enable_toggler"
+            android:summary="@string/enable_toggler_long"
+            android:key="enable_toggler"
+            android:defaultValue="true"/>
+        <CheckBoxPreference
+            android:title="@string/toggler_launch"
+            android:summary="@string/toggler_launch_long"
+            android:key="toggler_launch"
+            android:defaultValue="true"
+            android:dependency="enable_toggler"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/about">
         <Preference android:title="@string/Created_By"
