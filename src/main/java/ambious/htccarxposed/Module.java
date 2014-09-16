@@ -4,11 +4,13 @@ package ambious.htccarxposed;
  * Created by Elad on 01/06/2014.
  */
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.view.KeyEvent;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -27,14 +29,14 @@ import static de.robv.android.xposed.XposedHelpers.setBooleanField;
 
 public class Module implements IXposedHookLoadPackage {
     private XSharedPreferences xSharedPreferences;
-
     Context _mainContext;
+
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         XposedBridge.log("Loaded app: " + lpparam.packageName);
 
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
-        if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app
+        if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app and other required services // || lpparam.packageName.equals("com.htc.HTCSpeaker"
             return;
 
         /**
@@ -72,32 +74,31 @@ public class Module implements IXposedHookLoadPackage {
          */
         final int wifi_mode = xSharedPreferences.getInt("wifi_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
 //        final int gps_mode = xSharedPreferences.getInt("gps_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-        if (wifi_mode != 0) {
-            findAndHookMethod(mainClass, "onCreate", Bundle.class, new XC_MethodHook() {
+        findAndHookMethod(mainClass, "onCreate", Bundle.class, new XC_MethodHook() {
+            /**
+             * Works by intercepting the startup method and adding code after it runs
+             */
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                super.afterHookedMethod(param);
+                //Set global context to the car app
+                Context _this = (Context) param.thisObject; //Gets the active app instance
+                _mainContext = _this;
+                XposedBridge.log("htccarxposed: Context set to OnCreate: " + _this.toString());
 
-                /**
-                 * Works by intercepting the startup method and adding code after it runs
-                 */
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    //Set global context to the car app
-                    Context _this = (Context) param.thisObject; //Gets the active app instance
-                    _mainContext = _this;
-
-                    //Startup mods
-                    if (wifi_mode != 0) {
-                        WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
-                        if (wifi_mode == 1) {
-                            wifiManager.setWifiEnabled(true);
-                            XposedBridge.log("htccarxposed: Turning WIFI on!");
-                        } else if (wifi_mode == 2) {
-                            wifiManager.setWifiEnabled(false);
-                            XposedBridge.log("htccarxposed: Turning WIFI off!");
-                        }
+                //Startup mods
+                if (wifi_mode != 0) {
+                    WifiManager wifiManager = (WifiManager) ((Context) param.thisObject).getSystemService(Context.WIFI_SERVICE);
+                    if (wifi_mode == 1) {
+                        wifiManager.setWifiEnabled(true);
+                        XposedBridge.log("htccarxposed: Turning WIFI on!");
+                    } else if (wifi_mode == 2) {
+                        wifiManager.setWifiEnabled(false);
+                        XposedBridge.log("htccarxposed: Turning WIFI off!");
                     }
+                }
                     /*
-                    //GPS mods are not working for some uknown reason at the moment.
+                    //GPS mods are not working for some unknown reason at the moment.
 
                     if (gps_mode != 0)
                     {
@@ -115,9 +116,9 @@ public class Module implements IXposedHookLoadPackage {
                         _mainContext.sendBroadcast(intent);
                     }
                     */
-                }
-            });
-        }
+            }
+        });
+
 
         /**
          * This adds an intent handler for the car app - if it detects a 'shutdown' intent it will, of course, shut it down.
@@ -127,8 +128,6 @@ public class Module implements IXposedHookLoadPackage {
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
                 Intent _intent = (Intent) param.args[0];
-                XposedBridge.log("htccarxposed: Intercepted new intent!");
-                XposedBridge.log("htccarxposed: Intent action: " + _intent.getAction());
                 if (_intent.getBooleanExtra("killOrder",false))
                 {
                     XposedBridge.log("htccarxposed: Killing app by request of toggler");
@@ -137,6 +136,8 @@ public class Module implements IXposedHookLoadPackage {
                 }
             }
         });
+
+
 
         /**
          * Enable statusbar - also displays the 'recent-apps' while not actually enabling it.
@@ -190,13 +191,46 @@ public class Module implements IXposedHookLoadPackage {
             });
         }
 
+        /**
+         * 3-Dot tap gesture override
+         */
+        if (xSharedPreferences.getInt("gesture_override",1) != 0)
+            findAndHookMethod("com.htc.AutoMotive.util.SystemGestureService",lpparam.classLoader,"onHandleIntent",Intent.class,new XC_MethodReplacement() {
+                @Override
+                protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
+                    XposedBridge.log("htccarxposed: Intercepted gesture handler!");
+                    Activity _mainActivity = (Activity) _mainContext;
+                    Intent _intent = new Intent();
+                    switch (xSharedPreferences.getInt("gesture_override",0))
+                    {
+                        case 1: //Google's Hands-Free
+                            _intent.setAction(RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE);
+                            break;
+                        case 2: //Google Now
+                            _intent.setClassName("com.google.android.googlequicksearchbox","com.google.android.googlequicksearchbox.VoiceSearchActivity");
+                            break;
+                        case 3: //Custom App
+                            String packageName = xSharedPreferences.getString("gesture_package",null);
+                            String intentAction = xSharedPreferences.getString("gesture_action", null);
+                            if (packageName != null) {
+                                _intent.setPackage(packageName);
+                                _intent.setAction(intentAction);
+                            }
+                            break;
+                        default:
+                            XposedBridge.log("htccarxposed: Unrecognized gesture setting: " + xSharedPreferences.getInt("gesture_override",0));
+                            return null;
+                    }
+                    _mainActivity.startActivityForResult(_intent,_mainActivity.getTaskId());
+                    return null;
+                }
+            });
 
-
-        /*
-        * Exit Wi-Fi Action
-        */
+        /**
+         * Exit Wi-Fi Action
+         */
         final int wifi_exit = xSharedPreferences.getInt("wifi_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-//        final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+        //        final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         final boolean kill_apps = xSharedPreferences.getBoolean("kill_apps",false);
         if (wifi_exit != 0 || kill_apps)
             findAndHookMethod(mainClass, "onDestroy", new XC_MethodHook() {

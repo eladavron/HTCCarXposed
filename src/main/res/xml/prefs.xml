@@ -20,6 +20,12 @@
             android:summary="@string/capture_home_long"
             android:key="capture_home"
             android:defaultValue="true"/>
+        <ambious.htccarxposed.GesturePreference
+            android:key="gesture_override"
+            android:title="@string/three_fingers"
+            android:entries="@array/overrides"
+            android:entryValues="@array/overrides_values"
+            android:defaultValue="1"/>
         <CheckBoxPreference
             android:key="wakelock"
             android:title="@string/wakelock"
@@ -76,11 +82,11 @@
     <PreferenceCategory
         android:title="@string/mod_settings"
         android:key="mod_settings">
-        <!--<CheckBoxPreference-->
-            <!--android:title="@string/enable_app_icon"-->
-            <!--android:summary="@string/enable_app_icon_long"-->
-            <!--android:key="enable_app_icon"-->
-            <!--android:defaultValue="true"/>-->
+        <CheckBoxPreference
+            android:title="@string/enable_app_icon"
+            android:summary="@string/enable_app_icon_long"
+            android:key="enable_app_icon"
+            android:defaultValue="true"/>
         <CheckBoxPreference
             android:title="@string/enable_toggler"
             android:summary="@string/enable_toggler_long"

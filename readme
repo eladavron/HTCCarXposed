@@ -1,5 +1,10 @@
 Changelog:
 =========
+Version 1.7:
+* Added the option to override the "3-Fingers tap" gesture with either Google Hands-Free, Google Now or a custom app of your choice!
+* Fixed the "_mainContext" global variable (it wasn't being set if Wi-Fi was set to 'Don't Change').
+* Changed the defaults to be closer to the recommended settings rather than the stock settings. I figure if user install this mod, it means they want it to work out-of-the-box.
+* Fixed a bug with the Toggler where it would launch the settings app instead of the car if triggered by 3rd party app (such as NFC or Tasker).
 
 Version 1.6:
 * Added the "App Toggler" which allows to shut down the car app through a global shortcut, or launch it if it's already closed.

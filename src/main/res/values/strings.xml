@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Globarl Resources -->
+    <!-- Global Resources -->
     <string name="app_name">Car Xposed!</string>
     <string name="toggler">Car Toggler</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Headers -->
     <string name="interface_mods">Interface Mods</string>
@@ -36,6 +37,7 @@
     <string name="enable_toggler_long">Enable the \"Toggler\" icon which shuts the Car app off if it\'s running and starts it if it\'s not.</string>
     <string name="toggler_launch">Launch the Car App if not running.</string>
     <string name="toggler_launch_long">Leave disabled to only shut the Car app down, but not launch it if it\'s already off.</string>
+    <string name="three_fingers">3-Fingers Tap</string>
 
     <!-- About Strings -->
     <string name="Created_By">Created By</string>
@@ -44,6 +46,20 @@
     <string name="click_here">Click here for the XDA-Developers thread.</string>
     <string name="Libraries_Used">Libraries Used</string>
     <string name="root_tools">RootTools 3.5 by Stericson.\n(Click for GitHub repository).</string>
+
+    <string-array name="overrides">
+        <item>Stock (HTC Speak)</item>
+        <item>Google Hands-Free</item>
+        <item>Google Now</item>
+        <item>Custom...</item>
+    </string-array>
+
+    <string-array name="overrides_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
 
     <string-array name="modes">
         <item>Don\'t Change</item>
