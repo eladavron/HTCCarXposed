@@ -73,7 +73,7 @@ public class Module implements IXposedHookLoadPackage {
          * Startup Action
          */
         final int wifi_mode = xSharedPreferences.getInt("wifi_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-//        final int gps_mode = xSharedPreferences.getInt("gps_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+        final int gps_mode = xSharedPreferences.getInt("gps_mode", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         findAndHookMethod(mainClass, "onCreate", Bundle.class, new XC_MethodHook() {
             /**
              * Works by intercepting the startup method and adding code after it runs
@@ -98,24 +98,23 @@ public class Module implements IXposedHookLoadPackage {
                     }
                 }
                     /*
-                    //GPS mods are not working for some unknown reason at the moment.
-
-                    if (gps_mode != 0)
-                    {
-                        final Intent intent = new Intent("com.htc.settings.action.SET_GPS_ENABLED");
-                        boolean newStatus;
-                        if (gps_mode == 1)
-                            newStatus = true;
-                        else if (gps_mode == 2)
-                            newStatus = false;
-                        else {
-                            XposedBridge.log("htccarxposed: Unrecognized GPS mode: " + gps_mode);
-                            return;
-                        }
-                        intent.putExtra("extra_enabled", newStatus);
-                        _mainContext.sendBroadcast(intent);
-                    }
+                    //GPS settings on startup
                     */
+                if (gps_mode != 0)
+                {
+                    final Intent intent = new Intent("com.htc.settings.action.SET_GPS_ENABLED");
+                    boolean newStatus;
+                    if (gps_mode == 1)
+                        newStatus = true;
+                    else if (gps_mode == 2)
+                        newStatus = false;
+                    else {
+                        XposedBridge.log("htccarxposed: Unrecognized GPS mode: " + gps_mode);
+                        return;
+                    }
+                    intent.putExtra("extra_enabled", newStatus);
+                    _mainContext.sendBroadcast(intent);
+                }
             }
         });
 
@@ -201,7 +200,7 @@ public class Module implements IXposedHookLoadPackage {
                     XposedBridge.log("htccarxposed: Intercepted gesture handler!");
                     Activity _mainActivity = (Activity) _mainContext;
                     Intent _intent = new Intent();
-                    switch (xSharedPreferences.getInt("gesture_override",0))
+                    switch (xSharedPreferences.getInt("gesture_override",1))
                     {
                         case 1: //Google's Hands-Free
                             _intent.setAction(RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE);
@@ -230,9 +229,9 @@ public class Module implements IXposedHookLoadPackage {
          * Exit Wi-Fi Action
          */
         final int wifi_exit = xSharedPreferences.getInt("wifi_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
-        //        final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
+        final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         final boolean kill_apps = xSharedPreferences.getBoolean("kill_apps",false);
-        if (wifi_exit != 0 || kill_apps)
+        if (wifi_exit != 0 || gps_exit != 0 || kill_apps)
             findAndHookMethod(mainClass, "onDestroy", new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -253,7 +252,8 @@ public class Module implements IXposedHookLoadPackage {
                     }
 
                     /*
-                    //GPS Settings do not work at the moment for an unknown reason
+                    //GPS Settings on exit
+                    */
 
                     if (gps_exit != 0)
                     {
@@ -270,7 +270,6 @@ public class Module implements IXposedHookLoadPackage {
                         intent.putExtra("extra_enabled", newStatus);
                         _mainContext.sendBroadcast(intent);
                     }
-                    */
                 }
             });
 

@@ -33,6 +33,8 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
         getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
+        syncListPrefSummary((ListPreference) findPreference("gps_mode"));
+        syncListPrefSummary((ListPreference) findPreference("gps_exit"));
         if (mainFile.getString("gesture_override", "1").equals("3")) //If the 3 fingers tap setting is on 'custom'
             findPreference("gesture_override").setSummary(mainFile.getString("gesture_name","Custom..."));
         else
@@ -41,8 +43,7 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
             CharSequence newSummary = ((ListPreference)findPreference("gesture_override")).getEntries()[newValueInt];
             (findPreference("gesture_override")).setSummary(newSummary);
         }
-//        syncListPrefSummary((ListPreference) findPreference("gps_mode"));
-//        syncListPrefSummary((ListPreference) findPreference("gps_exit"));
+
         killBackground(); //Kill any open instances of the car-app so settings are applied next time it's accessed.
     }
 

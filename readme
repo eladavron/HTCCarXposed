@@ -1,6 +1,10 @@
 Changelog:
 =========
-Version 1.7:
+
+Version 1.8:
+* Brought back GPS mods - finally working (I hope)!
+
+Version 1.7a:
 * Added the option to override the "3-Fingers tap" gesture with either Google Hands-Free, Google Now or a custom app of your choice!
 * Fixed the "_mainContext" global variable (it wasn't being set if Wi-Fi was set to 'Don't Change').
 * Changed the defaults to be closer to the recommended settings rather than the stock settings. I figure if user install this mod, it means they want it to work out-of-the-box.
