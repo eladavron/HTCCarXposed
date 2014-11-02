@@ -2,6 +2,7 @@ package ambious.htccarxposed;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -24,12 +25,16 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
     private SharedPreferences sharedFile;
     private SharedPreferences mainFile;
     private static final String LOG_TAG = "HTCCarModeXposed";
+    ComponentName devAdminReceiver;
+    DevicePolicyManager mDPM;
+    boolean mAdminActive;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.prefs);
         sharedFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE); //Enable the 'world-readable' preference file. This is neccesary because the module can't access the default one.
         mainFile = PreferenceManager.getDefaultSharedPreferences(this);
+
         getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));
@@ -43,7 +48,33 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
             CharSequence newSummary = ((ListPreference)findPreference("gesture_override")).getEntries()[newValueInt];
             (findPreference("gesture_override")).setSummary(newSummary);
         }
-
+        mDPM = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
+        devAdminReceiver = new ComponentName(this, ModuleDeviceAdminReceiver.class);
+        CheckBoxPreference device_sleep = (CheckBoxPreference) findPreference("lock_screen");
+        if (!isActiveAdmin()) {
+            mAdminActive = false;
+            device_sleep.setChecked(false);
+        }
+        device_sleep.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object o) {
+                boolean value = (Boolean) o;
+                {
+                    if (value) {
+                        // Launch the activity to have the user enable our admin.
+                        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, devAdminReceiver);
+                        startActivityForResult(intent, 1);
+                    } else {
+                        //Remove from admin
+                        mDPM.removeActiveAdmin(devAdminReceiver);
+                        return true;
+                    }
+                    //Set false anyway, only the request response can set true.
+                    return false;
+                }
+            }
+        });
         killBackground(); //Kill any open instances of the car-app so settings are applied next time it's accessed.
     }
 
@@ -80,9 +111,10 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
             sharedFile.edit()
                     .putBoolean(s, sharedPreferences.getBoolean(s, false))
                     .commit();
-        if (s.equals("allow_pulldown") && !sharedPreferences.getBoolean(s, true))
+        if (s.equals("allow_pulldown") && !sharedPreferences.getBoolean(s, true)) {
             ((CheckBoxPreference) findPreference("allow_multitasking")).setChecked(false);
-        if (s.equals("kill_apps") && sharedPreferences.getBoolean(s, false) == false)
+        }
+        if (s.equals("kill_apps") && !sharedPreferences.getBoolean(s, false))
             ((CheckBoxPreference) findPreference("kill_root")).setChecked(false);
         if (s.equals("kill_root") && sharedPreferences.getBoolean(s, false)) {
             //Check for root privilages
@@ -127,7 +159,7 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
         killBackground(); //If changes were made, they'll only apply if the car app is restarted.
     }
 
-        /**
+    /**
      * Kills the car app in the background
      */
     private void killBackground() {
@@ -165,15 +197,33 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
                     .putInt("gesture_override",3)
                     .putString("gesture_package",packageName)
                     .putString("gesture_name",applicationName)
-                    .putString("gesture_action",data.getAction())
+                    .putString("gesture_action",intentAction)
                     .commit();
             mainFile.edit()
                     .putString("gesture_package",packageName)
                     .putString("gesture_name",applicationName)
-                    .putString("gesture_action",data.getAction())
+                    .putString("gesture_action",intentAction)
                     .commit();
             ListPreference listPreference = (ListPreference) findPreference("gesture_override");
             listPreference.setSummary(applicationName);
         }
+        else if (requestCode == 1 && resultCode == RESULT_OK)
+        {
+            mAdminActive = isActiveAdmin();
+            Log.i(LOG_TAG,"Admin permissions granted!");
+            CheckBoxPreference lockscreen = (CheckBoxPreference)findPreference("lock_screen");
+            lockscreen.setChecked(true);
+        } else if (requestCode == 1 && resultCode == RESULT_CANCELED)
+        {
+            mAdminActive = isActiveAdmin();
+            Log.i(LOG_TAG,"User cancelled admin request!");
+            CheckBoxPreference lockscreen = (CheckBoxPreference)findPreference("lock_screen");
+            lockscreen.setChecked(false);
+            Toast.makeText(this, R.string.no_privilages,Toast.LENGTH_LONG).show();
+        }
+    }
+    private boolean isActiveAdmin() {
+        Log.i(LOG_TAG,"Admin state: " + mDPM.isAdminActive(devAdminReceiver));
+        return mDPM.isAdminActive(devAdminReceiver);
     }
 }

@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
+    <user-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -24,43 +26,57 @@
             android:value="30" />
 
         <activity
-            android:name=".CarModeInterface"
+            android:name="ambious.htccarxposed.CarModeInterface"
             android:label="@string/app_name" >
             <intent-filter>
-                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS"/>
+                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
             </intent-filter>
         </activity>
+
         <activity-alias
-            android:enabled="true"
             android:name="ambious.htccarxposed.CarModeInterface_Alias"
-            android:label="@string/app_name"
+            android:enabled="true"
             android:icon="@drawable/ic_launcher"
-            android:targetActivity="ambious.htccarxposed.CarModeInterface">
+            android:label="@string/app_name"
+            android:targetActivity="ambious.htccarxposed.CarModeInterface" >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS"/>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
             </intent-filter>
         </activity-alias>
+
         <activity
-            android:name=".CarToggler"
-            android:label="@string/toggler"
+            android:name="ambious.htccarxposed.CarToggler"
             android:icon="@drawable/toggler"
+            android:label="@string/toggler"
             android:theme="@android:style/Theme.NoDisplay" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
         <service
-            android:name=".Killer"
+            android:name="ambious.htccarxposed.Killer"
             android:label="@string/killer_desc" >
             <intent-filter>
                 <action android:name="android.intent.action.RUN" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".ModuleDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_meta" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

@@ -38,6 +38,11 @@
     <string name="toggler_launch">Launch the Car App if not running.</string>
     <string name="toggler_launch_long">Leave disabled to only shut the Car app down, but not launch it if it\'s already off.</string>
     <string name="three_fingers">3-Fingers Tap</string>
+    <string name="lock_screen">Put Device in Sleep</string>
+    <string name="lock_screen_long">Requires application to be enabled as an Administrator!</string>
+
+    <!-- Errors -->
+    <string name="no_privilages">Screen can not be turned off if the Car Xposed module isn\'t set as a Device Administrator</string>
 
     <!-- About Strings -->
     <string name="Created_By">Created By</string>

@@ -1,6 +1,9 @@
 Changelog:
 =========
 
+Version 1.9:
+* Added an option to put device into sleep (turn off / lock screen) when the Car app exits. This option requires the module app to be approved as a device Administrator.
+
 Version 1.8:
 * Brought back GPS mods - finally working (I hope)!
 

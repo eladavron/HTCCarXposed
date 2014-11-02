@@ -34,7 +34,6 @@ public class Module implements IXposedHookLoadPackage {
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         XposedBridge.log("Loaded app: " + lpparam.packageName);
-
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
         if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app and other required services // || lpparam.packageName.equals("com.htc.HTCSpeaker"
             return;
@@ -231,12 +230,13 @@ public class Module implements IXposedHookLoadPackage {
         final int wifi_exit = xSharedPreferences.getInt("wifi_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         final int gps_exit = xSharedPreferences.getInt("gps_exit", 0); //Read user preference. 0 = don't change (default), 1 = turn on, 2 = turn off
         final boolean kill_apps = xSharedPreferences.getBoolean("kill_apps",false);
-        if (wifi_exit != 0 || gps_exit != 0 || kill_apps)
+        final boolean turnoff_screen = xSharedPreferences.getBoolean("lock_screen",false); //Checks whether to turn off screen on exit.
+        if (wifi_exit != 0 || gps_exit != 0 || kill_apps || turnoff_screen)
             findAndHookMethod(mainClass, "onDestroy", new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
                     if (kill_apps) {
-                        super.beforeHookedMethod(param);
                         XposedBridge.log("htccarxposed: Sending kill command.");
                         callService(Killer.KILL_SWITCH);
                     }
@@ -249,6 +249,12 @@ public class Module implements IXposedHookLoadPackage {
                             wifiManager.setWifiEnabled(false);
                             XposedBridge.log("htccarxposed: Turning WIFI off!");
                         }
+                    }
+
+                    if (turnoff_screen)
+                    {
+                       XposedBridge.log("htccarxposed: Attempting to lock screen...");
+                       callService(Killer.LOCK_SCREEN);
                     }
 
                     /*

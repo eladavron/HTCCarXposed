@@ -3,8 +3,12 @@ package ambious.htccarxposed;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.IntentService;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
 import android.util.Log;
 
 import com.stericson.RootTools.RootTools;
@@ -19,8 +23,12 @@ import java.util.ArrayList;
 public class Killer extends IntentService {
     private final String LOG_TAG = "HTCCarModeXposed - (Killer)";
     private static ArrayList<String> _mainAppList;
+    ComponentName devAdminReceiver;
+    DevicePolicyManager mDPM;
     public static final int KILL_SWITCH = 0;
     public static final int ADD_TO_LIST = 1;
+    public static final int LOCK_SCREEN = 2;
+    private Handler handler;
 
     public Killer() {
         super("HTCCarModeXposed(Killer)");
@@ -82,6 +90,18 @@ public class Killer extends IntentService {
                     Log.e(LOG_TAG, "Unknown Exception!");
                     ex.printStackTrace();
                     return;
+                }
+                break;
+            case LOCK_SCREEN:
+                mDPM = (DevicePolicyManager)this.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                devAdminReceiver = new ComponentName(this, ModuleDeviceAdminReceiver.class);
+                if (mDPM.isAdminActive(devAdminReceiver))
+                {
+                    mDPM.lockNow();
+                }
+                else
+                {
+                    Log.e(LOG_TAG,"Tried locking screen without Admin privilages!");
                 }
                 break;
             default:

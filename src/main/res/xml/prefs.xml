@@ -68,6 +68,11 @@
             android:key="bypassExitDialog"
             android:defaultValue="true"/>
         <CheckBoxPreference
+            android:title="@string/lock_screen"
+            android:summary="@string/lock_screen_long"
+            android:key="lock_screen"
+            android:defaultValue="false"/>
+        <CheckBoxPreference
             android:title="@string/killer_pref"
             android:summary="@string/killer_long"
             android:key="kill_apps"
