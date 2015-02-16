@@ -1,5 +1,8 @@
 Changelog:
 =========
+Version 2.0:
+* Added Android 5.0 Lollipop support!
+(This version was not tested on KitKat!)
 
 Version 1.9:
 * Added an option to put device into sleep (turn off / lock screen) when the Car app exits. This option requires the module app to be approved as a device Administrator.

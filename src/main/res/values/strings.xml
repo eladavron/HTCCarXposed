@@ -76,9 +76,6 @@
         <item>1</item>
         <item>2</item>
     </string-array>
-
-    <string name="title_activity_my">MyActivity</string>
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 
 </resources>
