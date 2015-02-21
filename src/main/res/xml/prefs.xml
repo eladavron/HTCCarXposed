@@ -103,6 +103,11 @@
             android:key="toggler_launch"
             android:defaultValue="true"
             android:dependency="enable_toggler"/>
+        <CheckBoxPreference
+            android:title="@string/enable_logging"
+            android:summary="@string/enable_logging_long"
+            android:key="enable_logging"
+            android:defaultValue="false"/>
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/about">
         <Preference android:title="@string/Created_By"

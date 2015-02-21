@@ -8,11 +8,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
 import com.stericson.RootTools.RootTools;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -28,6 +33,7 @@ public class Killer extends IntentService {
     public static final int KILL_SWITCH = 0;
     public static final int ADD_TO_LIST = 1;
     public static final int LOCK_SCREEN = 2;
+    public static final int LOGGER = 3;
     private Handler handler;
 
     public Killer() {
@@ -93,21 +99,41 @@ public class Killer extends IntentService {
                 }
                 break;
             case LOCK_SCREEN:
-                mDPM = (DevicePolicyManager)this.getSystemService(Context.DEVICE_POLICY_SERVICE);
+                mDPM = (DevicePolicyManager) this.getSystemService(Context.DEVICE_POLICY_SERVICE);
                 devAdminReceiver = new ComponentName(this, ModuleDeviceAdminReceiver.class);
-                if (mDPM.isAdminActive(devAdminReceiver))
-                {
+                if (mDPM.isAdminActive(devAdminReceiver)) {
                     mDPM.lockNow();
+                } else {
+                    Log.e(LOG_TAG, "Tried locking screen without Admin privilages!");
                 }
-                else
-                {
-                    Log.e(LOG_TAG,"Tried locking screen without Admin privilages!");
-                }
+                break;
+            case LOGGER:
+                Logger(intent.getStringExtra("message") + "\n");
                 break;
             default:
                 Log.e(LOG_TAG, "Unrecognized intent!");
                 Log.e(LOG_TAG, "Intent action: " + action);
                 return;
+        }
+    }
+
+    private void Logger(String message) {
+        try {
+            String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+            Log.d(LOG_TAG,"Opening file in dir: " + path);
+            File file = new File(path + "/xcar.log");
+            Log.d(LOG_TAG,"Opening stream: " + file.getAbsolutePath());
+            FileOutputStream stream = new FileOutputStream(file,true);
+            stream.write(message.getBytes());
+            stream.close();
+        } catch (FileNotFoundException e) {
+            Log.e(LOG_TAG,"File not found: " + e.getMessage());
+            return;
+        } catch (IOException e) {
+            Log.e(LOG_TAG,"IO Exception: " + e.getMessage());
+            return;
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Unknown error: " + e.getMessage());
         }
     }
 }

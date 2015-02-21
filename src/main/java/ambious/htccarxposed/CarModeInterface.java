@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -48,6 +49,10 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
             CharSequence newSummary = ((ListPreference)findPreference("gesture_override")).getEntries()[newValueInt];
             (findPreference("gesture_override")).setSummary(newSummary);
         }
+        CheckBoxPreference logging = (CheckBoxPreference)findPreference("enable_logging");
+        String summary = getResources().getString(R.string.enable_logging_long);
+        if (logging != null || summary != null)
+            logging.setSummary(summary + " \"" +  Environment.getExternalStorageDirectory().getAbsolutePath() + "/carx.log\"");
         mDPM = (DevicePolicyManager)getSystemService(Context.DEVICE_POLICY_SERVICE);
         devAdminReceiver = new ComponentName(this, ModuleDeviceAdminReceiver.class);
         CheckBoxPreference device_sleep = (CheckBoxPreference) findPreference("lock_screen");

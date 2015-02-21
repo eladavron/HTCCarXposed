@@ -5,6 +5,7 @@ package ambious.htccarxposed;
  */
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -39,11 +40,12 @@ public class Module implements IXposedHookLoadPackage {
     final int E = 3;
     static final boolean isLollipop = Build.VERSION.SDK_INT >= 20;
     String methodName, className, fieldName;
-
+    static boolean logger = false;
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
         Logger(D,"Loaded app: " + lpparam.packageName);
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
+        logger = xSharedPreferences.getBoolean("enable_logging", false);
         if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app and other required services //
             return;
 
@@ -241,7 +243,16 @@ public class Module implements IXposedHookLoadPackage {
                             Logger(E, "Unrecognized gesture setting: " + xSharedPreferences.getInt("gesture_override",0));
                             return null;
                     }
-                    _mainActivity.startActivityForResult(_intent,_mainActivity.getTaskId());
+                    try {
+                        _mainActivity.startActivityForResult(_intent, _mainActivity.getTaskId());
+                    } catch (ActivityNotFoundException notFound)
+                    {
+                        Logger(E,"Google Now either not installed or not configured correctly!");
+                        Logger(E,notFound.getStackTrace().toString());
+                    } catch (Exception e)
+                    {
+                        Logger(E, "Failed to handle intent!\nIntent action: " + _intent.getAction() + "\nIntent class: " + _intent.getClass().getName());
+                    }
                     return null;
                 }
             });
@@ -341,12 +352,20 @@ public class Module implements IXposedHookLoadPackage {
 
     private void callService(int action, String... args)
     {
-        Intent newIntent = new Intent();
-        newIntent.putExtra("action",action);
-        newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
-        if (action == Killer.ADD_TO_LIST)
-            newIntent.putExtra(args[0],args[1]);
-        _mainContext.startService(newIntent);
+        try {
+            Intent newIntent = new Intent();
+            newIntent.putExtra("action", action);
+            newIntent.setComponent(new ComponentName("ambious.htccarxposed", "ambious.htccarxposed.Killer"));
+            if (action == Killer.ADD_TO_LIST)
+                newIntent.putExtra(args[0], args[1]);
+            if (action == Killer.LOGGER)
+                newIntent.putExtra("message", args[0]);
+            _mainContext.startService(newIntent);
+        }
+        catch (Exception er)
+        {
+            Log.e(LOG_TAG,"Error launching service!");
+        }
     }
 
     private void Logger(int type, String message)
@@ -373,5 +392,7 @@ public class Module implements IXposedHookLoadPackage {
                     Log.d(LOG_TAG,"Unrecognized error type: " + message);
             }
         }
+        if(_mainContext != null && logger)
+            callService(Killer.LOGGER,message);
     }
 }
