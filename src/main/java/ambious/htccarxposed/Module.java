@@ -38,23 +38,29 @@ public class Module implements IXposedHookLoadPackage {
     final int I = 1;
     final int W = 2;
     final int E = 3;
-    static final boolean isLollipop = Build.VERSION.SDK_INT >= 20;
+    final int VERSION_33 = 330001270;
+    final int VERSION_34 = 342628413;
+    final int VERSION_75 =  750160455;
+    int CAR_VERSION;
     String methodName, className, fieldName;
     static boolean logger = false;
 
     public void handleLoadPackage(final LoadPackageParam lpparam) throws Throwable {
-        Logger(D,"Loaded app: " + lpparam.packageName);
         xSharedPreferences = new XSharedPreferences("ambious.htccarxposed", "xPreferences"); //Load the user preferences file called 'xPreferences' - since it's world-readable while the default preference file isn't.
         logger = xSharedPreferences.getBoolean("enable_logging", false);
-        if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.packageName.equals("android"))) //Make sure we only operate within the car-app and other required services //
+        CAR_VERSION = xSharedPreferences.getInt("carVersion", -1);
+        if (CAR_VERSION == -1)
+            Logger(E,"Car Version not successfully retrieved!");
+
+        if (!(lpparam.packageName.equals("com.htc.AutoMotive") || lpparam.processName.equals("android"))) //Make sure we only operate within the car-app and other required services //
             return;
 
         /**
          * Multitasking - this part intercepts "Recent Apps" requests, and if "Autmotive" (carmode) is set to "true", it over-rides it to "false", thus allowing multi-tasking.
          * Only relevant in KitKat!
          */
-
-        if (!isLollipop && lpparam.packageName.equals("android")) {
+        Logger(D,"Car Version = " + CAR_VERSION);
+        if (Build.VERSION.SDK_INT < 20 && lpparam.packageName.equals("android")) {
             Logger(I,"Hooked into Android Policy!");
             Class<?> HandleRecentAppsRunnable = findClass("com.android.internal.policy.impl.PhoneWindowManager.HandleRecentAppsRunnable",lpparam.classLoader);
             findAndHookMethod(HandleRecentAppsRunnable, "run", new XC_MethodHook() {
@@ -71,6 +77,23 @@ public class Module implements IXposedHookLoadPackage {
                 }
             });
             return;
+        }
+        else if (lpparam.processName.equals("android")) {
+            Logger(I,"Hooked into Android Policy!");
+            Class<?> interceptKeyBeforeDispatching = findClass("com.android.internal.policy.impl.PhoneWindowManager", lpparam.classLoader);
+            findAndHookMethod(interceptKeyBeforeDispatching, "interceptKeyBeforeDispatching", "android.view.WindowManagerPolicy$WindowState", KeyEvent.class, int.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    super.beforeHookedMethod(param);
+                    xSharedPreferences.reload();
+                    boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", true); //Check user settings - default is true. Has to be here otherwise it'll be set on startup.
+                    if (((KeyEvent)param.args[1]).getKeyCode() == 187 && getBooleanField(param.thisObject,"mAutoMotiveEnabled") && allow_multitasking) //Only intercepts if "allow multitasking" is set and car mode is active.
+                    {
+                        Logger(D,"Intercepted Recent Apps request!");
+                        setBooleanField(param.thisObject, "mAutoMotiveEnabled", false);
+                    }
+                }
+            });
         }
 
         /**
@@ -149,7 +172,15 @@ public class Module implements IXposedHookLoadPackage {
                 if (_intent.getBooleanExtra("killOrder",false))
                 {
                     Logger(I,"Killing app by request of toggler.");
-                    methodName = (isLollipop)? "b" : "finishCarmode";
+                    switch (CAR_VERSION) {
+                        case VERSION_33:
+                            methodName = "finishCarmode";
+                            break;
+                        case VERSION_34:
+                        case VERSION_75:
+                        default:
+                            methodName = "b";
+                    }
                     callMethod(param.thisObject, methodName);
                     return;
                 }
@@ -163,7 +194,17 @@ public class Module implements IXposedHookLoadPackage {
          */
         final boolean allow_pulldown = xSharedPreferences.getBoolean("allow_pulldown", true); //Check user settings - default is true
         if (allow_pulldown) {
-            methodName = (isLollipop)? "i" : "setStatusBarLocked";
+            switch(CAR_VERSION) {
+                case VERSION_33:
+                    methodName = "setStatusBarLocked";
+                    break;
+                case VERSION_34:
+                    methodName = "i";
+                    break;
+                case VERSION_75:
+                default:
+                    methodName = "j";
+            }
             findAndHookMethod(mainClass, methodName, boolean.class, new XC_MethodReplacement() {
 
                 /**
@@ -183,7 +224,16 @@ public class Module implements IXposedHookLoadPackage {
 
         boolean capture_home = xSharedPreferences.getBoolean("capture_home", true);
         if (!capture_home) {
-            methodName = (isLollipop)? "e" : "enableUiMode";
+            switch(CAR_VERSION)
+            {
+                case VERSION_33:
+                    methodName = "enableUiMode";
+                    break;
+                case VERSION_34:
+                case VERSION_75:
+                default:
+                    methodName = "e";
+            }
             findAndHookMethod(mainClass, methodName, new XC_MethodReplacement() {
                 /**
                  * Intercepts the method and completely replaces it.
@@ -203,7 +253,17 @@ public class Module implements IXposedHookLoadPackage {
         boolean wakelock = xSharedPreferences.getBoolean("wakelock",true);
         if (!wakelock)
         {
-            methodName = (isLollipop)? "f" : "enableUiMode";
+            switch (CAR_VERSION){
+                case VERSION_33:
+                    methodName = "acquireWakeLock";
+                    break;
+                case VERSION_34:
+                    methodName = "f";
+                    break;
+                case VERSION_75:
+                default:
+                    methodName = "g";
+            }
             findAndHookMethod(mainClass, methodName, boolean.class, new XC_MethodReplacement() {
                 @Override
                 protected Object replaceHookedMethod(MethodHookParam methodHookParam) throws Throwable {
@@ -316,8 +376,21 @@ public class Module implements IXposedHookLoadPackage {
          * Log and kill all apps opened during session
          */
         if (kill_apps) {
-            methodName = (isLollipop)? "a" : "safeStartActivity";
-            className = (isLollipop)? "com.htc.AutoMotive.util.n" : "com.htc.AutoMotive.util.Utils";
+            switch (CAR_VERSION)
+            {
+                case VERSION_33:
+                    methodName = "safeStartActivity";
+                    className = "com.htc.AutoMotive.util.Utils";
+                    break;
+                case VERSION_34:
+                    className = "com.htc.AutoMotive.util.n";
+                    methodName = "a";
+                    break;
+                case VERSION_75:
+                default:
+                    className = "com.htc.AutoMotive.util.r";
+                    methodName = "a";
+            }
             findAndHookMethod(className, lpparam.classLoader, methodName, Context.class, Intent.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -339,10 +412,23 @@ public class Module implements IXposedHookLoadPackage {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                     super.afterHookedMethod(param);
-                    fieldName = (isLollipop)? "G" : "bIsLeaveDialogShowing";
+                    switch (CAR_VERSION)
+                    {
+                        case VERSION_33:
+                            fieldName = "bIsLeaveDialogShowing";
+                            methodName = "finishCarmode";
+                            break;
+                        case VERSION_34:
+                            fieldName = "G";
+                            methodName = "b";
+                            break;
+                        default:
+                        case VERSION_75:
+                            fieldName = "H";
+                            methodName = "b";
+                    }
                     if (getBooleanField(param.thisObject, fieldName)) { //Intercepts exit dialog
                         Logger(I,"Bypassing exit dialog...");
-                        methodName = (isLollipop)? "b" : "finishCarmode";
                         callMethod(param.thisObject, methodName);
                     }
                 }
@@ -370,7 +456,7 @@ public class Module implements IXposedHookLoadPackage {
 
     private void Logger(int type, String message)
     {
-        if (!isLollipop)
+        if (Build.VERSION.SDK_INT < 20)
             XposedBridge.log(LOG_TAG + ": " + message);
         else
         {

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference
+        android:key="carVersion"
+        android:title="@string/car_version"/>
     <PreferenceCategory
         android:key="interface_mods"
         android:title="@string/interface_mods">

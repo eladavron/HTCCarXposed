@@ -42,6 +42,8 @@
     <string name="lock_screen_long">Requires application to be enabled as an Administrator!</string>
     <string name="enable_logging">Enable Logging</string>
     <string name="enable_logging_long">Writes everything the module does into a logfile on </string>
+    <string name="car_version">Car App Version</string>
+    <string name="not_detected">NOT DETECTED!</string>
 
     <!-- Errors -->
     <string name="no_privilages">Screen can not be turned off if the Car Xposed module isn\'t set as a Device Administrator</string>

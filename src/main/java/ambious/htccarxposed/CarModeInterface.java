@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -35,7 +36,28 @@ public class CarModeInterface extends PreferenceActivity  implements SharedPrefe
         addPreferencesFromResource(R.xml.prefs);
         sharedFile = getSharedPreferences("xPreferences", MODE_WORLD_READABLE); //Enable the 'world-readable' preference file. This is neccesary because the module can't access the default one.
         mainFile = PreferenceManager.getDefaultSharedPreferences(this);
-
+        int carVersion;
+        String carVersionString;
+        try {
+            PackageManager manager = this.getPackageManager();
+            PackageInfo info = manager.getPackageInfo("com.htc.AutoMotive", 0);
+            carVersion = info.versionCode;
+            carVersionString = info.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(LOG_TAG,"Car app not installed!?");
+            carVersion = -1;
+            carVersionString = getString(R.string.not_detected);
+        }
+        Preference carVersionPref = findPreference("carVersion");
+        if (carVersion != -1) {
+            sharedFile.edit()
+                    .putInt("carVersion", carVersion)
+                    .commit();
+            if (carVersionPref != null)
+                carVersionPref.setSummary(carVersionString);
+        } else {
+            carVersionPref.setSummary(R.string.not_detected);
+        }
         getPreferenceScreen().getSharedPreferences().registerOnSharedPreferenceChangeListener(this);
         syncListPrefSummary((ListPreference) findPreference("wifi_mode"));
         syncListPrefSummary((ListPreference) findPreference("wifi_exit"));

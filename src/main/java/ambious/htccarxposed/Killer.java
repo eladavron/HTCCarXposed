@@ -34,6 +34,7 @@ public class Killer extends IntentService {
     public static final int ADD_TO_LIST = 1;
     public static final int LOCK_SCREEN = 2;
     public static final int LOGGER = 3;
+    public static final int STARTUP = 4;
     private Handler handler;
 
     public Killer() {
