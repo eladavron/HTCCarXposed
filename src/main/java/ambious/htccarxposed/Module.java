@@ -78,7 +78,7 @@ public class Module implements IXposedHookLoadPackage {
             });
             return;
         }
-        else if (lpparam.processName.equals("android")) {
+        else if (lpparam.processName.equals("android") && CAR_VERSION == VERSION_75) { //For Lollipop Sense 7 Versions
             Logger(I,"Hooked into Android Policy!");
             Class<?> interceptKeyBeforeDispatching = findClass("com.android.internal.policy.impl.PhoneWindowManager", lpparam.classLoader);
             findAndHookMethod(interceptKeyBeforeDispatching, "interceptKeyBeforeDispatching", "android.view.WindowManagerPolicy$WindowState", KeyEvent.class, int.class, new XC_MethodHook() {
@@ -87,6 +87,12 @@ public class Module implements IXposedHookLoadPackage {
                     super.beforeHookedMethod(param);
                     xSharedPreferences.reload();
                     boolean allow_multitasking = xSharedPreferences.getBoolean("allow_multitasking", true); //Check user settings - default is true. Has to be here otherwise it'll be set on startup.
+                    boolean capture_home = xSharedPreferences.getBoolean("capture_home", true); //Check user settings - default is true. Has to be here otherwise it'll be set on startup.
+                    if (((KeyEvent)param.args[1]).getKeyCode() == 3 && !getBooleanField(param.thisObject,"mAutoMotiveEnabled") && capture_home) //Only intercepts if "capture home" is set and car mode is active and the button pressed is "home".
+                    {
+                        Logger(D,"Intercepted Home Button request!");
+                        setBooleanField(param.thisObject, "mAutoMotiveEnabled", true);
+                    }
                     if (((KeyEvent)param.args[1]).getKeyCode() == 187 && getBooleanField(param.thisObject,"mAutoMotiveEnabled") && allow_multitasking) //Only intercepts if "allow multitasking" is set and car mode is active.
                     {
                         Logger(D,"Intercepted Recent Apps request!");

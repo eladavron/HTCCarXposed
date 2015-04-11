@@ -1,9 +1,9 @@
 Changelog:
 =========
-Version 2.2.Interim
+Version 2.2
 * Added Sense 7.0 Compatibility
 * Fixed an issue with the screen not staying on in older versions (Android 4.4)
-* NOT A FINISHED BUILD! Released as an interim to quickly address Sense 7.0 compatibility, but MANY THINGS ARE STILL BROKEN!
+(Not Tested on Sense 6.* Versions!)
 
 Version 2.1
 * Fixed a bug that would cause the 3-finger gesture to crash the "Car" app even when not running.
